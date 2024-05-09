@@ -1,6 +1,6 @@
 # Nombre del Proyecto 
 
-Breve descripción del proyecto: Este proyecto es un script de Python que permite automatizar la pulsación de la tecla "W" en una ventana o juego específico, facilitando el movimiento continuo (autorun) dentro del juego. El script también permite configurar dinámicamente las teclas de acceso directo y elegir la ventana del juego activa desde una lista.
+Este proyecto es un script de Python que permite automatizar la pulsación de la tecla "W" en una ventana o juego específico, facilitando el movimiento continuo (autorun) dentro del juego. El script también permite configurar dinámicamente las teclas de acceso directo y elegir la ventana del juego activa desde una lista.
 
 ## Características
 

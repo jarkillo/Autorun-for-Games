@@ -1,85 +1,90 @@
+import tkinter as tk
+from tkinter import simpledialog
 import keyboard
+import threading
 import time
 import pygetwindow as gw
-import sys
 
-def elegir_ventana():
-    ventanas = gw.getAllWindows()
-    print("Selecciona la ventana del juego:")
-    for i, ventana in enumerate(ventanas):
-        print(f"{i + 1}: {ventana.title}")
-    eleccion = int(input("Introduce el número de la ventana: ")) - 1
-    return ventanas[eleccion]
+app = tk.Tk()
+app.title("Control de Autorun")
 
-window = elegir_ventana()
+# Variables globales
+autorun_active = tk.BooleanVar(value=False)
+hotkey = None
+window_focus_title = None
 
-autorun = False
-
-def toggle_autorun():
-    global autorun, window
-    if window and window.isActive:
-        autorun = not autorun
-        if autorun:
+def run_autorun():
+    """ Simula la pulsación continua de la tecla 'w' solo si la ventana deseada está enfocada. """
+    while autorun_active.get():
+        focused_window = gw.getActiveWindow()
+        if focused_window and focused_window.title == window_focus_title:
             keyboard.press('w')
-            print("Autorun activado.")
+            time.sleep(0.1)
         else:
             keyboard.release('w')
-            print("Autorun desactivado.")
+            time.sleep(0.5)
+
+def toggle_autorun():
+    """ Activa o desactiva el autorun. """
+    if autorun_active.get():
+        autorun_active.set(False)
+        keyboard.release('w')
+        status_label.config(text="Autorun: Desactivado")
     else:
-        print("El juego no está activo o el título de la ventana no coincide.")
+        if not hotkey:
+            status_label.config(text="Por favor, configura primero una tecla para el autorun.")
+            return
+        autorun_active.set(True)
+        status_label.config(text="Autorun: Activado")
+        threading.Thread(target=run_autorun, daemon=True).start()
 
-def exit_program():
-    global running
-    print("Cerrando el programa...")
-    keyboard.release('w')  # Libera la tecla en caso de que esté presionada
-    running = False  # Establece running a False para detener el bucle
+def set_hotkey():
+    """ Configura la hotkey desde un diálogo de entrada. """
+    global hotkey
+    hotkey = simpledialog.askstring("Configurar Hotkey", "Presiona la tecla que deseas configurar:")
+    if hotkey:
+        hotkey_label.config(text=f"Tecla configurada para autorun: {hotkey}")
+        keyboard.add_hotkey(hotkey, toggle_autorun)
+        status_label.config(text="Autorun: Desactivado")
 
-
-def configurar_teclas():
-    global toggle_key, exit_key
+def show_window_selector():
+    """ Muestra una ventana nueva con una lista de ventanas abiertas. """
+    selector = tk.Toplevel(app)
+    selector.title("Seleccionar Ventana")
     
-    print("Presiona y suelta la combinación de teclas para alternar el autorun:")
-    toggle_key = leer_combinacion()
-    print(f"Combinación registrada para alternar autorun: {toggle_key}")
+    listbox = tk.Listbox(selector)
+    listbox.pack(fill=tk.BOTH, expand=True)
     
-    while True:
-        print("Presiona y suelta la combinación de teclas para salir del programa:")
-        exit_key = leer_combinacion()
-        if exit_key != toggle_key:
-            print(f"Combinación registrada para salir del programa: {exit_key}")
-            break
-        else:
-            print("Error: La combinación de teclas para salir no puede ser la misma que para alternar el autorun. Intenta otra combinación.")
+    windows = gw.getAllTitles()
+    for title in windows:
+        if title:  # evita añadir títulos vacíos
+            listbox.insert(tk.END, title)
+    
+    def on_select(evt):
+        global window_focus_title
+        window_focus_title = listbox.get(listbox.curselection())
+        focus_window_label.config(text=f"Ventana enfocada: {window_focus_title}")
+        selector.destroy()
+    
+    listbox.bind('<<ListboxSelect>>', on_select)
 
+# UI Setup
+status_label = tk.Label(app, text="Autorun: Desactivado")
+status_label.pack(pady=10)
 
-def leer_combinacion():
-    combinacion = keyboard.read_hotkey(suppress=False)
-    while any([keyboard.is_pressed(key) for key in combinacion.split('+')]):
-        time.sleep(0.1)  # Pequeña pausa para evitar uso excesivo del CPU
-    return combinacion
+toggle_btn = tk.Button(app, text="Activar/Desactivar Autorun", command=toggle_autorun)
+toggle_btn.pack(pady=10)
 
+set_key_btn = tk.Button(app, text="Configurar Tecla para Autorun", command=set_hotkey)
+set_key_btn.pack(pady=10)
 
-try:
-    configurar_teclas()
-    keyboard.add_hotkey(toggle_key, toggle_autorun)
-    keyboard.add_hotkey(exit_key, exit_program)
+hotkey_label = tk.Label(app, text="Ninguna tecla para autorun configurada")
+hotkey_label.pack(pady=10)
 
-    running = True
-    print("Programa iniciado.")
-    while running:
-        time.sleep(1)
-    print("Saliendo del bucle principal...")
-except Exception as e:
-    print(f"Error detectado: {str(e)}")
-finally:
-    keyboard.unhook_all_hotkeys()
-    print("Teclas liberadas y programa cerrado correctamente.")
+focus_window_btn = tk.Button(app, text="Seleccionar Ventana", command=show_window_selector)
+focus_window_btn.pack(pady=10)
 
+focus_window_label = tk.Label(app, text="Ninguna ventana enfocada configurada")
+focus_window_label.pack(pady=10)
 
-
-
-
-
-# Para crear el instalador
-
-# pyinstaller --onefile autorun.py
+app.mainloop()

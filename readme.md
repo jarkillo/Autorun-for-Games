@@ -29,9 +29,9 @@ Para ejecutar este script, necesitas:
 
 Clona este repositorio en tu máquina local usando:
 
-    ```bash
+    
     git clone https://github.com/jarkillo/Autorun-for-Games.git
-    ```
+    
 
 Navega al directorio clonado y ejecuta el script:
 

@@ -1,5 +1,4 @@
 import tkinter as tk
-from tkinter import simpledialog
 import keyboard
 import threading
 import time
@@ -25,27 +24,29 @@ def run_autorun():
             time.sleep(0.5)
 
 def toggle_autorun():
-    """ Activa o desactiva el autorun. """
+    """ Activa o desactiva el autorun, actualizando la etiqueta de estado. """
     if autorun_active.get():
         autorun_active.set(False)
         keyboard.release('w')
-        status_label.config(text="Autorun: Desactivado")
+        app.after(100, lambda: status_label.config(text="Autorun: Desactivado"))
     else:
-        if not hotkey:
-            status_label.config(text="Por favor, configura primero una tecla para el autorun.")
-            return
         autorun_active.set(True)
-        status_label.config(text="Autorun: Activado")
+        app.after(100, lambda: status_label.config(text="Autorun: Activado"))
         threading.Thread(target=run_autorun, daemon=True).start()
 
 def set_hotkey():
-    """ Configura la hotkey desde un diálogo de entrada. """
-    global hotkey
-    hotkey = simpledialog.askstring("Configurar Hotkey", "Presiona la tecla que deseas configurar:")
-    if hotkey:
-        hotkey_label.config(text=f"Tecla configurada para autorun: {hotkey}")
+    """ Captura la combinación de teclas en un hilo separado para no bloquear la GUI. """
+    def capture_hotkey():
+        global hotkey
+        app.after(100, lambda: hotkey_label.config(text="Pulsa la combinación de teclas y luego Enter para finalizar..."))
+        recorded = keyboard.record(until='enter')
+        hotkey_events = [event for event in recorded if event.event_type == 'down' and event.name != 'enter']
+        hotkey = '+'.join({event.name for event in hotkey_events})
         keyboard.add_hotkey(hotkey, toggle_autorun)
-        status_label.config(text="Autorun: Desactivado")
+        app.after(100, lambda: hotkey_label.config(text=f"Tecla configurada para autorun: {hotkey}"))
+        app.after(100, lambda: status_label.config(text="Autorun: Desactivado"))
+    
+    threading.Thread(target=capture_hotkey, daemon=True).start()
 
 def show_window_selector():
     """ Muestra una ventana nueva con una lista de ventanas abiertas. """
@@ -57,7 +58,7 @@ def show_window_selector():
     
     windows = gw.getAllTitles()
     for title in windows:
-        if title:  # evita añadir títulos vacíos
+        if title:
             listbox.insert(tk.END, title)
     
     def on_select(evt):
@@ -71,9 +72,6 @@ def show_window_selector():
 # UI Setup
 status_label = tk.Label(app, text="Autorun: Desactivado")
 status_label.pack(pady=10)
-
-toggle_btn = tk.Button(app, text="Activar/Desactivar Autorun", command=toggle_autorun)
-toggle_btn.pack(pady=10)
 
 set_key_btn = tk.Button(app, text="Configurar Tecla para Autorun", command=set_hotkey)
 set_key_btn.pack(pady=10)

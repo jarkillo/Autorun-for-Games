@@ -35,10 +35,10 @@ Clona este repositorio en tu máquina local usando:
 
 Navega al directorio clonado y ejecuta el script:
 
-    ```bash
+    
     cd 06 - Autorun
     python autorun.py
-    ```
+    
 
 ## Uso
 

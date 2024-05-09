@@ -36,7 +36,7 @@ Clona este repositorio en tu máquina local usando:
 Navega al directorio clonado y ejecuta el script:
 
     
-    cd 06 - Autorun
+    cd Autorun
     python autorun.py
     
 
